@@ -1,0 +1,14 @@
+# Mina de prueba
+
+NODO E1 estacionamiento
+NODO I1 interseccion
+NODO I2 interseccion
+NODO P1 pala 3
+NODO P2 pala 3
+NODO S1 stockpile
+
+TRAMO T1 E1 I1 doble 5
+TRAMO T2 I1 S1 doble 8
+TRAMO T3 I1 I2 doble 10
+TRAMO R1 I2 P1 rampa 4
+TRAMO R2 I2 P2 rampa 6
