@@ -1,0 +1,4 @@
+Seq,Tick,Camion,Evento,Recurso,Toneladas
+1,10,C-01,adquiere,Pala-01,0
+2,30,C-01,carga,Pala-01,50
+3,31,C-01,libera,Pala-01,50

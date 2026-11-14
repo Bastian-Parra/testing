@@ -1,0 +1,4 @@
+Seq,Tick,Entidad,Evento,Recurso,Toneladas
+1,10,Pala-01,adquiere,C-01,0
+2,40,Pala-01,carga,C-01,0
+3,41,Pala-01,libera,C-01,0
