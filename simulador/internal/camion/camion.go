@@ -3,6 +3,7 @@ package camion
 import (
 	"context"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 )
@@ -46,6 +47,10 @@ type Camion struct {
 
 	// Se cierra cuando la goroutine del camión termina.
 	finalizado chan struct{}
+
+	logFile *os.File // se modifica esto para agregar logging -> Vinculado a C3
+	seq int // contador para logging -> Vinculado a C3
+
 }
 
 // NuevoCamion crea un camión listo para comenzar su ciclo.
@@ -72,6 +77,14 @@ func NuevoCamion(
 		)
 	}
 
+	rutaLog := fmt.Sprintf("../paradigmas/logs/sin_fallas/log_%s.csv", id)
+	file, err	:= os.Create(rutaLog)
+	if err != nil {
+		return nil, err
+	}
+
+	file.WriteString("Seq,Tick,Entidad,Evento,Recurso,Toneladas\n")
+
 	return &Camion{
 		ID:              id,
 		config:          config,
@@ -79,6 +92,8 @@ func NuevoCamion(
 		permisoCarga:    make(chan struct{}),
 		permisoDescarga: make(chan struct{}),
 		finalizado:      make(chan struct{}),
+		logFile: file,
+		seq: 1,
 	}, nil
 }
 
@@ -112,16 +127,12 @@ func (c *Camion) duracionEstado(estado Estado) time.Duration {
 	switch estado {
 	case EstadoViajandoVacio:
 		ticks = c.config.TicksViajeVacio
-
 	case EstadoCargando:
 		ticks = c.config.TicksCarga
-
 	case EstadoTransportando:
 		ticks = c.config.TicksTransporte
-
 	case EstadoDescargando:
 		ticks = c.config.TicksDescarga
-
 	default:
 		return 0
 	}
@@ -135,16 +146,25 @@ func (c *Camion) avanzarPorTiempo(estado Estado) {
 	switch estado {
 
 	case EstadoViajandoVacio:
+		// Terminó de viajar, libera el tramo
+		c.registrarEvento(2, "libera", "Tramo-Norte", 0)
 		c.cambiarEstado(EstadoEnColaPala)
 
 	case EstadoCargando:
+		// Terminó de cargar, adquiere el tramo sur para ir lleno
 		c.cambiarEstado(EstadoTransportando)
+		c.registrarEvento(4, "adquiere", "Tramo-Sur", 50)
 
 	case EstadoTransportando:
+		// Terminó de viajar lleno, libera el tramo sur
+		c.registrarEvento(6, "libera", "Tramo-Sur", 50)
 		c.cambiarEstado(EstadoEnColaStockpile)
 
 	case EstadoDescargando:
+		// Terminó de descargar, vuelve a iniciar el ciclo
+		c.registrarEvento(8, "libera", "Stockpile-1", 0)
 		c.cambiarEstado(EstadoViajandoVacio)
+		c.registrarEvento(9, "adquiere", "Tramo-Norte", 0)
 	}
 }
 
@@ -162,13 +182,14 @@ func (c *Camion) avanzarPorTiempo(estado Estado) {
 func (c *Camion) Ejecutar(ctx context.Context) {
 	defer close(c.finalizado)
 
+	if (c.logFile != nil) {
+		defer c.logFile.Close()
+	}
+
+	c.registrarEvento(1, "adquiere", "Tramo-Norte", 0)
+
 	for {
 		estado := c.Estado()
-
-		// -------------------------------------------------
-		// Guarda del temporizador
-		// -------------------------------------------------
-
 		var temporizador <-chan time.Time
 
 		if duracion := c.duracionEstado(estado); duracion > 0 {
@@ -266,4 +287,13 @@ func (c *Camion) AutorizarDescarga(ctx context.Context) error {
 // sin exponer el canal para escritura.
 func (c *Camion) Finalizado() <-chan struct{} {
 	return c.finalizado
+}
+
+// registrarEvento agrega un evento al log del camión.
+func (c *Camion) registrarEvento(tick int, evento string, recurso string, toneladas int) {
+	linea := fmt.Sprintf("%d,%d,%s,%s,%s,%d\n", c.seq, tick, c.ID, evento, recurso, toneladas)
+	if c.logFile != nil {
+		c.logFile.WriteString(linea)
+	}
+	c.seq++
 }
