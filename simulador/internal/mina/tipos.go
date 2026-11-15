@@ -1,5 +1,8 @@
 package mina
 
+import (
+	"github.com/Bastian-Parra/ici425-carabelli-flores-parra/simulador/internal/camion"
+)
 // TipoNodo representa los tipos de nodos permitidos en la mina.
 type TipoNodo string
 
@@ -38,6 +41,12 @@ type Tramo struct {
 	NodoB  string
 	Tipo   TipoTramo
 	Tiempo int
+
+	Capacidad int
+	entrada chan *camion.Camion
+	salida chan *camion.Camion
+	cola []*camion.Camion // cola estricta FIFO
+	ocupantes int
 }
 
 // Mina contiene la representación completa del mapa.

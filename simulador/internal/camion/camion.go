@@ -27,16 +27,10 @@ type Configuracion struct {
 // su propia goroutine.
 type Camion struct {
 	ID string
-
 	config Configuracion
-
-	// Protege el estado para que pueda ser consultado
-	// desde otras goroutines sin producir carreras de datos.
-	mu     sync.RWMutex
+	mu     sync.RWMutex // protege el acceso al estado
 	estado Estado
 
-	// Estos canales representan recursos/eventos externos.
-	//
 	// permisoCarga solamente se escucha cuando el camión
 	// se encuentra esperando en la cola de una pala.
 	//
@@ -44,13 +38,13 @@ type Camion struct {
 	// está esperando en un stockpile.
 	permisoCarga    chan struct{}
 	permisoDescarga chan struct{}
+	permisoTramo    chan struct{} // canal para que el tramo avise que puede avanzar
 
 	// Se cierra cuando la goroutine del camión termina.
 	finalizado chan struct{}
 
 	logFile *os.File // se modifica esto para agregar logging -> Vinculado a C3
 	seq int // contador para logging -> Vinculado a C3
-
 }
 
 // NuevoCamion crea un camión listo para comenzar su ciclo.
@@ -78,6 +72,7 @@ func NuevoCamion(
 	}
 
 	rutaLog := fmt.Sprintf("../paradigmas/logs/sin_fallas/log_%s.csv", id)
+	os.MkdirAll("../paradigmas/logs/sin_fallas", os.ModePerm)
 	file, err	:= os.Create(rutaLog)
 	if err != nil {
 		return nil, err
@@ -91,6 +86,7 @@ func NuevoCamion(
 		estado:          EstadoViajandoVacio,
 		permisoCarga:    make(chan struct{}),
 		permisoDescarga: make(chan struct{}),
+		permisoTramo:    make(chan struct{}),
 		finalizado:      make(chan struct{}),
 		logFile: file,
 		seq: 1,
@@ -146,24 +142,22 @@ func (c *Camion) avanzarPorTiempo(estado Estado) {
 	switch estado {
 
 	case EstadoViajandoVacio:
-		// Terminó de viajar, libera el tramo
 		c.registrarEvento(2, "libera", "Tramo-Norte", 0)
+		// falta por hacer: integrar con el ruteador luego
 		c.cambiarEstado(EstadoEnColaPala)
 
 	case EstadoCargando:
-		// Terminó de cargar, adquiere el tramo sur para ir lleno
-		c.cambiarEstado(EstadoTransportando)
+		c.cambiarEstado(EstadoEnColaTramo)
+		// falta por hacer: integrar con el ruteador luego
 		c.registrarEvento(4, "adquiere", "Tramo-Sur", 50)
 
 	case EstadoTransportando:
-		// Terminó de viajar lleno, libera el tramo sur
 		c.registrarEvento(6, "libera", "Tramo-Sur", 50)
 		c.cambiarEstado(EstadoEnColaStockpile)
 
 	case EstadoDescargando:
-		// Terminó de descargar, vuelve a iniciar el ciclo
 		c.registrarEvento(8, "libera", "Stockpile-1", 0)
-		c.cambiarEstado(EstadoViajandoVacio)
+		c.cambiarEstado(EstadoEnColaTramo)
 		c.registrarEvento(9, "adquiere", "Tramo-Norte", 0)
 	}
 }
@@ -202,6 +196,7 @@ func (c *Camion) Ejecutar(ctx context.Context) {
 
 		var canalCarga <-chan struct{}
 		var canalDescarga <-chan struct{}
+		var canalTramo <-chan struct{}
 
 		// El permiso de carga solamente tiene sentido
 		// cuando el camión está esperando en una pala.
@@ -213,6 +208,11 @@ func (c *Camion) Ejecutar(ctx context.Context) {
 		// cuando espera en el stockpile.
 		if estado == EstadoEnColaStockpile {
 			canalDescarga = c.permisoDescarga
+		}
+
+		// solo se escucha si está esperando entrar a uno
+		if estado == EstadoEnColaTramo {
+			canalTramo = c.permisoTramo
 		}
 
 		// -------------------------------------------------
@@ -238,8 +238,17 @@ func (c *Camion) Ejecutar(ctx context.Context) {
 		// Lo mismo ocurre con el permiso de descarga.
 		case <-canalDescarga:
 			c.cambiarEstado(EstadoDescargando)
-		}
+
+		// FIFO cumplido: el primer camión en cola es autorizado a avanzar.
+		case <-canalTramo:
+			if c.seq < 4 { // Un truco rápido usando tu secuencia actual de AWK
+				c.cambiarEstado(EstadoViajandoVacio)
+			} else {
+				c.cambiarEstado(EstadoTransportando)
+			}
+			c.registrarEvento(3, "adquiere", "Tramo", 0)
 	}
+}
 }
 
 // AutorizarCarga permite que una pala indique al camión
@@ -289,11 +298,24 @@ func (c *Camion) Finalizado() <-chan struct{} {
 	return c.finalizado
 }
 
-// registrarEvento agrega un evento al log del camión.
+// registrarEvento agrega un evento al log del camión. (relacionado al C3)
 func (c *Camion) registrarEvento(tick int, evento string, recurso string, toneladas int) {
 	linea := fmt.Sprintf("%d,%d,%s,%s,%s,%d\n", c.seq, tick, c.ID, evento, recurso, toneladas)
 	if c.logFile != nil {
 		c.logFile.WriteString(linea)
 	}
 	c.seq++
+}
+
+// es llamado por goroutine del tramo	para avisarle al camión que puede avanzar
+func (c *Camion) AutorizarTramo(ctx context.Context) {
+	select {
+	case c.permisoTramo <- struct{}{}:
+	case	<-ctx.Done():
+	}
+}
+
+// expone el canal de lectura para bloquear camion
+func (c *Camion) EsperarPermisoTramo() <-chan struct{} {
+	return c.permisoTramo
 }
