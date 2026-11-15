@@ -12,11 +12,13 @@ import (
 
 // Solicitud contiene la información que envía un camión.
 type Solicitud struct {
-	CamionID  string
-	Origen    string
-	Cargado   bool
-	Fallas    map[string]bool
-	Respuesta chan Resultado
+	CamionID string
+	Origen   string
+	Cargado  bool
+	Fallas   map[string]bool
+	// BloqueosDireccionales se usa en la fase de fallas sin afectar la API anterior.
+	BloqueosDireccionales map[string]map[string]bool
+	Respuesta             chan Resultado
 }
 
 // Resultado indica el destino asignado y la ruta.
@@ -95,9 +97,13 @@ func (d *Despachador) asignar(s Solicitud) Resultado {
 		indice := (*turno + i) % len(candidatos)
 		destino := candidatos[indice]
 
-		ruta, err := d.planificador.CalcularRuta(
-			s.Origen, destino, s.Cargado, s.Fallas,
-		)
+		var ruta []string
+		var err error
+		if s.BloqueosDireccionales != nil {
+			ruta, err = d.planificador.CalcularRutaDireccional(s.Origen, destino, s.Cargado, s.BloqueosDireccionales)
+		} else {
+			ruta, err = d.planificador.CalcularRuta(s.Origen, destino, s.Cargado, s.Fallas)
+		}
 
 		if err != nil || len(ruta) == 0 {
 			continue
