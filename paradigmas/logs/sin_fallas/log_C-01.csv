@@ -1,0 +1,5 @@
+Seq,Tick,Entidad,Evento,Recurso,Toneladas
+1,1,C-01,adquiere,Tramo-Norte,0
+2,2,C-01,libera,Tramo-Norte,0
+3,4,C-01,adquiere,Tramo-Sur,50
+4,6,C-01,libera,Tramo-Sur,50
