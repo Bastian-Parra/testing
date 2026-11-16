@@ -1,0 +1,7 @@
+Seq,Tick,Entidad,Evento,Recurso,Toneladas
+1,0,C-01,entra,T1_A->B,
+2,1,C-01,avanza,T1_A->B,
+3,2,C-02,entra,T2_A->B,
+4,3,C-01,temporal,T1_A->B,
+5,4,C-01,reparando,T1_A->B,
+6,5,C-01,sale,T1_A->B,
