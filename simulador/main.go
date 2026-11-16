@@ -117,18 +117,35 @@ func ejecutarConFallas(pf, pp float64, seed int64, reparMin, reparMax, ticks, ms
 		log.Fatal(err)
 	}
 	defer archivo.Close()
-	fmt.Fprintln(archivo, "Tick,Camion,Evento,Tramo,Sentido,Avance")
+
+	// Formato de logs
+	fmt.Fprintln(archivo, "Seq,Tick,Entidad,Evento,Recurso,Toneladas")
+
 	var logMu sync.Mutex
 	inicio := time.Now()
+	secuencia := 0
+
 	registrar := func(id, evento, tramo, sentido string, avance int) {
 		t := int(time.Since(inicio) / tick)
+
 		if t > ticks {
 			t = ticks
 		}
+
 		logMu.Lock()
 		defer logMu.Unlock()
-		fmt.Fprintf(archivo, "%d,%s,%s,%s,%s,%d\n", t, id, evento, tramo, sentido, avance)
+
+		// Cada evento recibe un numero consecutivo.
+		secuencia++
+
+		recurso := tramo
+
+		toneladas := ""
+
+		fmt.Fprintf(archivo, "%d,%d,%s,%s,%s,%s\n",
+			secuencia, t, id, evento, recurso, toneladas)
 	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	var wg sync.WaitGroup
