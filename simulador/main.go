@@ -139,6 +139,9 @@ func ejecutarConFallas(pf, pp float64, seed int64, reparMin, reparMax, ticks, ms
 		secuencia++
 
 		recurso := tramo
+		if sentido != "" {
+			recurso = tramo + "_" + sentido
+		}
 
 		toneladas := ""
 
