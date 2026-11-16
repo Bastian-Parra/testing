@@ -115,3 +115,35 @@ El evento `sale` confirma que el camión abandonó el tramo, pero no proporciona
 
 ------------------------------------
 
+## Iteración 3: Diagrama de Gantt por camión
+
+### Objetivo
+
+Generar un diagrama de Gantt utilizando Python y tkinter para visualizar los estados de cada camión a lo largo de los ticks registrados en el CSV.
+
+### Prompt inicial utilizado
+
+Genera un diagrama de Gantt en Python utilizando tkinter. Lee los eventos mediante `LectorLogs`, agrupa los eventos por camión y representa los intervalos de circulación, fallas temporales, reparaciones, fallas permanentes, carga, descarga y salida del tramo. Utiliza colores diferentes para cada estado e incorpora una leyenda y barras de desplazamiento.
+
+### Primera prueba
+
+Se ejecutó:
+
+`python paradigmas/visualizador/gantt.py paradigmas/visualizador/prueba.csv`
+
+El programa abrió correctamente y mostró los camiones C-01 y C-02.
+
+**Errores detectados:**
+
+1. Se generaban bloques repetidos para eventos consecutivos con el mismo estado, como `entra` y `avanza`.
+2. Los nombres de estados se superponían cuando los intervalos eran demasiado pequeños.
+3. El último estado de un camión se extendía hasta el final del gráfico, aunque no existieran eventos que confirmaran su duración.
+
+### Prompt de corrección solicitado
+
+Corrige el diagrama de Gantt para unir bloques consecutivos del mismo estado, evitar etiquetas superpuestas y distinguir los intervalos observados de los períodos sin datos. Conserva los colores, la leyenda y las barras de desplazamiento.
+
+### Correcciones implementadas
+
+- Se agregó `unir_segmentos()` para evitar bloques consecutivos repetidos.
+- Se estable
