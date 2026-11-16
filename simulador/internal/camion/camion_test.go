@@ -105,8 +105,17 @@ func TestCamionCompletaCiclo(t *testing.T) {
 		100*time.Millisecond,
 	)
 
-	// Al terminar la carga comienza automáticamente
-	// el transporte hacia el stockpile.
+	esperarEstado(
+		t,
+		c,
+		EstadoEnColaTramo,
+		200*time.Millisecond,
+	)
+
+	// el tramo da luz verde
+	c.AutorizarTramo(ctx)
+
+	// comienza a transportar la carga hasta el stockpile
 	esperarEstado(
 		t,
 		c,
@@ -121,7 +130,7 @@ func TestCamionCompletaCiclo(t *testing.T) {
 		200*time.Millisecond,
 	)
 
-	// El stockpile autoriza la descarga.
+	// stockpile autoriza la descarga
 	if err := c.AutorizarDescarga(ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -133,13 +142,25 @@ func TestCamionCompletaCiclo(t *testing.T) {
 		100*time.Millisecond,
 	)
 
-	// Después de descargar comienza un nuevo ciclo.
+	// luego de descargar, debe hacer fila para el tramo
+	esperarEstado(
+		t,
+		c,
+		EstadoEnColaTramo,
+		200*time.Millisecond,
+	)
+
+	// luz verde al tramo de subida
+	c.AutorizarTramo(ctx)
+
+	// comienza un nuevo ciclo
 	esperarEstado(
 		t,
 		c,
 		EstadoViajandoVacio,
 		200*time.Millisecond,
 	)
+	
 }
 
 // Esta prueba comprueba específicamente el comportamiento

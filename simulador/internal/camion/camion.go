@@ -45,6 +45,8 @@ type Camion struct {
 
 	logFile *os.File // se modifica esto para agregar logging -> Vinculado a C3
 	seq int // contador para logging -> Vinculado a C3
+
+	cargado bool // indica si el camión está cargado o no
 }
 
 // NuevoCamion crea un camión listo para comenzar su ciclo.
@@ -147,6 +149,7 @@ func (c *Camion) avanzarPorTiempo(estado Estado) {
 		c.cambiarEstado(EstadoEnColaPala)
 
 	case EstadoCargando:
+		c.cargado = true
 		c.cambiarEstado(EstadoEnColaTramo)
 		// falta por hacer: integrar con el ruteador luego
 		c.registrarEvento(4, "adquiere", "Tramo-Sur", 50)
@@ -156,6 +159,7 @@ func (c *Camion) avanzarPorTiempo(estado Estado) {
 		c.cambiarEstado(EstadoEnColaStockpile)
 
 	case EstadoDescargando:
+		c.cargado = false
 		c.registrarEvento(8, "libera", "Stockpile-1", 0)
 		c.cambiarEstado(EstadoEnColaTramo)
 		c.registrarEvento(9, "adquiere", "Tramo-Norte", 0)
@@ -229,7 +233,6 @@ func (c *Camion) Ejecutar(ctx context.Context) {
 		// una duración automática.
 		case <-temporizador:
 			c.avanzarPorTiempo(estado)
-
 		// canalCarga será nil en cualquier otro estado,
 		// por lo que este caso queda deshabilitado.
 		case <-canalCarga:
@@ -241,10 +244,10 @@ func (c *Camion) Ejecutar(ctx context.Context) {
 
 		// FIFO cumplido: el primer camión en cola es autorizado a avanzar.
 		case <-canalTramo:
-			if c.seq < 4 { // Un truco rápido usando tu secuencia actual de AWK
-				c.cambiarEstado(EstadoViajandoVacio)
-			} else {
+		if c.cargado { 
 				c.cambiarEstado(EstadoTransportando)
+			} else {
+				c.cambiarEstado(EstadoViajandoVacio)
 			}
 			c.registrarEvento(3, "adquiere", "Tramo", 0)
 	}

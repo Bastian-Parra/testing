@@ -13,6 +13,7 @@ const (
 	EstadoDescargando     Estado = "Descargando"
 	EstadoEsperando       Estado = "Esperando"
 	EstadoEnFalla         Estado = "EnFalla"
+	EstadoEnColaTramo					Estado = "EnColaTramo"
 )
 
 // String permite obtener el nombre textual del estado.
