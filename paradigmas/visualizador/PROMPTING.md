@@ -147,3 +147,70 @@ Corrige el diagrama de Gantt para unir bloques consecutivos del mismo estado, ev
 
 - Se agregó `unir_segmentos()` para evitar bloques consecutivos repetidos.
 - Se estable
+
+---------------------
+
+
+## Iteración 4: Comparación de escenarios
+
+### Objetivo
+
+Generar gráficos comparativos utilizando Python y tkinter para visualizar los indicadores de diferentes escenarios de simulación.
+
+### Solicitud realizada a la IA
+
+Crear un módulo `comparativas.py` que permita cargar archivos CSV con las columnas `Indicador,Valor` y comparar toneladas transportadas, utilización de palas, tiempos de cola y camiones atrapados.
+
+El programa debe utilizar únicamente los valores disponibles, permitir seleccionar el indicador y evitar generar resultados cuando no existan datos.
+
+### Primera prueba: archivo inexistente
+
+Se ejecutó:
+
+`python paradigmas/visualizador/comparativas.py paradigmas/logs/sin_fallas/metricas.csv`
+
+**Resultado observado:** el programa informó que el archivo no existía y terminó de forma controlada.
+
+Esto permitió comprobar que no se generan gráficos utilizando datos inexistentes.
+
+### Segunda prueba: comparación visual
+
+Se crearon dos archivos CSV ficticios:
+
+- `prueba_sin_fallas.csv`
+- `prueba_con_fallas.csv`
+
+Se ejecutó:
+
+`python paradigmas/visualizador/comparativas.py paradigmas/visualizador/prueba_sin_fallas.csv paradigmas/visualizador/prueba_con_fallas.csv`
+
+Los resultados observados fueron:
+
+| Indicador | Sin fallas | Con fallas |
+|---|---:|---:|
+| Toneladas transportadas | 150 | 90 |
+| Utilización de palas (%) | 75 | 55 |
+| Tiempo promedio en cola de palas | 4 | 7 |
+| Tiempo promedio en cola de stockpiles | 2 | 3 |
+| Camiones atrapados | 0 | 2 |
+
+Los cinco gráficos mostraron correctamente los valores de los archivos de prueba.
+
+### Evaluación crítica
+
+El código generado permite visualizar comparaciones entre escenarios y responde correctamente cuando falta un archivo.
+
+Sin embargo, se identificaron las siguientes limitaciones:
+
+1. Los gráficos todavía utilizan un formato CSV intermedio que debe conectarse con los resultados del módulo funcional.
+2. Las pruebas se realizaron con datos ficticios, por lo que no permiten validar las métricas reales de la simulación.
+3. Los nombres de los escenarios provienen de los nombres de archivo y podrían mejorarse.
+4. Falta incorporar unidades de medida en las etiquetas de algunos indicadores.
+
+### Verificación pendiente
+
+Comparar las cifras del visualizador con los resultados calculados por `metricas.fsx` y comprobar su coherencia con los escenarios y las invariantes de Prolog.
+
+### Estado
+
+Iteración 4 implementada y verificada visualmente con datos de prueba. Integración con métricas reales pendiente.
