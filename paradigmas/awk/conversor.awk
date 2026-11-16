@@ -1,10 +1,8 @@
-
 BEGIN {
  FS = ","
 }
 
 # ignoramos la primera linea
-
 NR > 1 {
  seq = $1
  tick = $2
@@ -12,6 +10,7 @@ NR > 1 {
  evento = $4
  recurso = $5
  toneladas = $6
+
  if (entidad ~ /^Pala/) {
   camion = recurso
   pala = entidad
@@ -25,7 +24,6 @@ NR > 1 {
    printf("carga('%s', %s, %s, '%s', '%s', %s).\n", recurso, seq, tick, camion, recurso, toneladas)
   }
  }
-
  else if (entidad ~ /^C-/) {
   camion = entidad
   recurso = "C-" 
@@ -34,6 +32,7 @@ NR > 1 {
   }
  }
 
+ # --- Eventos agregados por tu compañero para el sistema de fallas ---
  if ($3 ~ /^C-/) {
   camion = $3
   recurso = $5
